@@ -50,7 +50,7 @@ func forever(fn func()) {
 	}
 }
 func doOrder(db *sql.DB, order oc.OrderJSON) error {
-	statements := order.Do()
+	statements := order.Do(db)
 	tx, err := db.Begin()
 	failOnError(err, "Failed to begine transaction")
 	defer tx.Rollback()
@@ -58,6 +58,7 @@ func doOrder(db *sql.DB, order oc.OrderJSON) error {
 		_, err := tx.Exec(stmt)
 		failOnError(err, "Failed to exec "+stmt)
 	}
+	pretty.Println("Commit transaction", order.OrderID)
 	return tx.Commit()
 }
 

@@ -2,11 +2,14 @@ package oc
 
 import (
 	"bytes"
+	"database/sql"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/kr/pretty"
 )
 
 // Sequence represents update sequence ID. It is string in 2.0, integer in previous versions.
@@ -579,13 +582,35 @@ func (od *OrderJSON) Update() []string {
 	return ret
 }
 
+//Exists return true if order alread exists in database
+func (od *OrderJSON) Exists(db *sql.DB) (bool, error) {
+	//rows, err := db.Query("SELECT COUNT(*) FROM order_master WHERE orderId=?", od.OrderID)
+	rows, err := db.Query("SELECT COUNT(*) FROM order_master WHERE orderId=?", string(od.Order.OrderInfo.OrderID))
+	if err == nil {
+		defer rows.Close()
+		if rows.Next() {
+			cn := 0
+			err = rows.Scan(&cn)
+			if err == nil {
+				return cn > 0, nil
+			}
+		}
+	}
+	return false, err
+}
+
 //Do put JSON order to OC
-func (od *OrderJSON) Do() []string {
+func (od *OrderJSON) Do(db *sql.DB) []string {
 	if od.Deleted {
+		pretty.Println("Delete", od.Order.OrderInfo.OrderID)
 		return od.Delete()
-	} else if od.Order.OrderInfo.OrderStatus > 4 {
+	}
+	e, _ := od.Exists(db)
+	if e {
+		pretty.Println("Update", od.Order.OrderInfo.OrderID)
 		return od.Update()
 	}
+	pretty.Println("Insert", od.Order.OrderInfo.OrderID)
 	return od.Insert()
 }
 
