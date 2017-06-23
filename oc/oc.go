@@ -1,12 +1,25 @@
 package oc
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"strconv"
 	"strings"
 	"time"
 )
+
+// Sequence represents update sequence ID. It is string in 2.0, integer in previous versions.
+// Use a new type to attach a customized unmarshaler
+// code borrowed from kivik
+type ID string
+
+// UnmarshalJSON satisfies the json.Unmarshaler interface.
+func (id *ID) UnmarshalJSON(data []byte) error {
+	sid := ID(bytes.Trim(data, `""`))
+	*id = sid
+	return nil
+}
 
 const ocTimeLayout = "2006-01-02 15:04:05"
 
@@ -282,7 +295,7 @@ func (ct *Time) IsSet() bool {
 type JAddrInfo struct {
 	AddressCountry  string `json:"addresscountry"`
 	Username        string `json:"username"`
-	AddressID       string `json:"addressid"`
+	AddressID       ID     `json:"addressid"`
 	AddressName     string `json:"addressname"`
 	AddressCity     string `json:"addresscity"`
 	AddressProvince string `json:"addressprovince"`
@@ -290,8 +303,8 @@ type JAddrInfo struct {
 	AddressPhone    string `json:"addressphone"`
 }
 type JOrderInfo struct {
-	OrderID             string `json:"orderid"`
-	UserID              string `json:"userid"`
+	OrderID             ID     `json:"orderid"`
+	UserID              ID     `json:"userid"`
 	UserName            string `json:"username"`
 	UserPhone           string `json:"userphone"`
 	TotalAmount         int    `json:"totalamount"`
@@ -299,7 +312,7 @@ type JOrderInfo struct {
 	PayAmount           int    `json:"payamount"`
 	Freight             int    `json:"freight"`
 	Nums                int    `json:"nums"`
-	StoreID             string `json:"storeid"`
+	StoreID             ID     `json:"storeid"`
 	StoreName           string `json:"storename"`
 	OrderTradeNo        string `json:"ordertradeno"`
 	OrderThirdNo        string `json:"orderthirdno"`
@@ -309,7 +322,7 @@ type JOrderInfo struct {
 	IsNeedInvoice       int    `json:"isneedinvoice"`
 	InvoiceTitle        string `json:"invoicetitle"`
 	Ext                 string `json:"ext"`
-	DeliveryWay         int    `json:"deliveryway"`
+	DeliveryWay         ID     `json:"deliveryway"`
 	AddTime             Time   `json:"addtime"`
 	BookTime            Time   `json:"booktime"`
 	PayTime             Time   `json:"paytime"`
@@ -319,7 +332,7 @@ type JOrderInfo struct {
 	DeliveryTime        Time   `json:"deliverytime"`
 	ReceiveTime         Time   `json:"receivetime"`
 	PayStatus           int    `json:"paystatus"`
-	CompanyID           string `json:"companyid"`
+	CompanyID           ID     `json:"companyid"`
 	CompanyName         string `json:"companyname"`
 	AddressLng          string `json:"addresslng"`
 	AddressLat          string `json:"addresslat"`
@@ -332,37 +345,37 @@ type JOrderInfo struct {
 	NeedDelivery        int    `json:"needdelivery"`
 }
 type JProductInfo struct {
-	ProductID    string `json:"productid"`
+	ProductID    ID     `json:"productid"`
 	TotalPrice   int    `json:"totalprice"`
 	ProductNum   int    `json:"productnum"`
 	ProductImg   string `json:"productimg"`
 	SalesArea    string `json:"salesarea"`
-	ProductName  string `json:"productname"`
+	ProductName  ID     `json:"productname"`
 	ProductPrice int    `json:"productprice"`
 	IsMeal       int    `json:"ismeat"`
-	MealItemID   string `json:"mealitemid, omitempty"`
+	MealItemID   ID     `json:"mealitemid, omitempty"`
 }
 
 //JMealInfo represents JSON data of meal detail
 type JMealInfo struct {
-	ProductID    string `json:"productid"`
+	ProductID    ID     `json:"productid"`
 	TotalPrice   int    `json:"totalprice"`
 	ProductNum   int    `json:"productnum"`
 	ProductImg   string `json:"productimg"`
 	SalesArea    string `json:"salesarea"`
-	MealID       string `json:"mealid"`
+	MealID       ID     `json:"mealid"`
 	MealType     string `json:"mealtype"`
-	ProductName  string `json:"productname"`
+	ProductName  ID     `json:"productname"`
 	ProductPrice int    `json:"productprice"`
 	MealPrice    int    `json:"mealprice"`
-	MealItemID   string `json:"mealitemid"`
+	MealItemID   ID     `json:"mealitemid"`
 }
 
 //JDiscountInfo represents JSON data of discount
 type JDiscountInfo struct {
 	MaketingCosts   string `json:"maketingcosts"`
-	ProductID       string `json:"productid"`
-	DiscountID      int    `json:"discountid"`
+	ProductID       ID     `json:"productid"`
+	DiscountID      ID     `json:"discountid"`
 	SalesArea       string `json:"salesarea"`
 	DiscountNum     int    `json:"discountnum"`
 	DiscountPrice   int    `json:"discountprice"`
@@ -370,7 +383,7 @@ type JDiscountInfo struct {
 	DiscountAmount  int    `json:"discountamount"`
 	DiscountType    string `json:"discounttype"`
 	DiscountExt     string `json:"discountext"`
-	MaketingCostsID int    `json:"maketingcostsid"`
+	MaketingCostsID ID     `json:"maketingcostsid"`
 }
 
 //JOrder represents JSON data of an order
@@ -384,8 +397,8 @@ type JOrder struct {
 
 func (od JOrder) genOrder() Order {
 	ret := Order{}
-	ret.orderId = od.OrderInfo.OrderID
-	ret.userId = od.OrderInfo.UserID
+	ret.orderId = string(od.OrderInfo.OrderID)
+	ret.userId = string(od.OrderInfo.UserID)
 	ret.userName = od.OrderInfo.UserName
 	ret.userPhone = od.OrderInfo.UserPhone
 	ret.totalAmount = od.OrderInfo.TotalAmount
@@ -393,7 +406,7 @@ func (od JOrder) genOrder() Order {
 	ret.payAmount = od.OrderInfo.PayAmount
 	ret.freight = od.OrderInfo.Freight
 	ret.nums = od.OrderInfo.Nums
-	ret.storeId = od.OrderInfo.StoreID
+	ret.storeId = string(od.OrderInfo.StoreID)
 	ret.storeName = od.OrderInfo.StoreName
 	ret.orderStatus = od.OrderInfo.OrderStatus
 	ret.orderTradeNo = od.OrderInfo.OrderTradeNo
@@ -402,7 +415,7 @@ func (od JOrder) genOrder() Order {
 	ret.orderSource = od.OrderInfo.OrderSource
 	ret.orderPlatformSource = od.OrderInfo.OrderPlatformSource
 	ret.payType = od.OrderInfo.PayType
-	ret.deliveryWay = od.OrderInfo.DeliveryWay
+	ret.deliveryWay, _ = strconv.Atoi(string(od.OrderInfo.DeliveryWay))
 	ret.isNeedInvoice = od.OrderInfo.IsNeedInvoice
 	ret.invoiceTitle = od.OrderInfo.InvoiceTitle
 	ret.ext = od.OrderInfo.Ext
@@ -414,7 +427,7 @@ func (od JOrder) genOrder() Order {
 	ret.ReturnTime = od.OrderInfo.ReturnTime.Time
 	ret.MealsTime = od.OrderInfo.MealsTime.Time
 	ret.CancelTime = od.OrderInfo.CancelTime.Time
-	ret.companyId, _ = strconv.Atoi(od.OrderInfo.CompanyID)
+	ret.companyId, _ = strconv.Atoi(string(od.OrderInfo.CompanyID))
 	ret.companyName = od.OrderInfo.CompanyName
 	ret.identifyingCode, _ = strconv.Atoi(od.OrderInfo.IdentifyingCode)
 	ret.payStatus = od.OrderInfo.PayStatus
@@ -434,24 +447,24 @@ func (od JOrder) genDetail() []Detail {
 	ret := make([]Detail, 0, len(od.ProductList))
 	for _, dis := range od.ProductList {
 		d := Detail{}
-		d.addressId = od.AddressInfo.AddressID
+		d.addressId = string(od.AddressInfo.AddressID)
 		d.AddTime = od.OrderInfo.AddTime.Time
 		//d.brandId =
-		d.companyId = od.OrderInfo.CompanyID
+		d.companyId = string(od.OrderInfo.CompanyID)
 		d.CreateTime = time.Now()
 		d.isMeat = dis.IsMeal
-		d.orderId = od.OrderInfo.OrderID
+		d.orderId = string(od.OrderInfo.OrderID)
 		//d.productDetail =
-		d.productId = dis.ProductID
+		d.productId = string(dis.ProductID)
 		d.productImg = dis.ProductImg
-		d.productName = dis.ProductName
+		d.productName = string(dis.ProductName)
 		d.productNum = dis.ProductNum
 		//d.UpdateTime =
 		d.totalPrice = dis.TotalPrice
 		d.productPrice = dis.ProductPrice
 		d.salesArea = dis.SalesArea
-		d.storeId = od.OrderInfo.StoreID
-		d.mealItemId = dis.MealItemID
+		d.storeId = string(od.OrderInfo.StoreID)
+		d.mealItemId = string(dis.MealItemID)
 		ret = append(ret, d)
 	}
 	return ret
@@ -463,15 +476,15 @@ func (od JOrder) genDiscount() []Discount {
 		d.CreateTime = time.Now()
 		d.discountAmount = dis.DiscountAmount
 		d.discountExt = dis.DiscountExt
-		d.discountId = dis.DiscountID
+		d.discountId, _ = strconv.Atoi(string(dis.DiscountID))
 		d.discountName = dis.DiscountName
 		d.discountNum = dis.DiscountNum
 		d.discountPrice = dis.DiscountPrice
 		d.discountType = dis.DiscountType
 		d.maketingCosts = dis.MaketingCosts
-		d.maketingCostsId = dis.MaketingCostsID
-		d.orderId = od.OrderInfo.OrderID
-		d.productId, _ = strconv.Atoi(dis.ProductID)
+		d.maketingCostsId, _ = strconv.Atoi(string(dis.MaketingCostsID))
+		d.orderId = string(od.OrderInfo.OrderID)
+		d.productId, _ = strconv.Atoi(string(dis.ProductID))
 		d.salesArea = dis.SalesArea
 		ret = append(ret, d)
 	}
@@ -484,18 +497,18 @@ func (od JOrder) genMeal() []Meal {
 		m.AddTime = od.OrderInfo.AddTime.Time
 		//m.brandId =
 		m.CreateTime = time.Now()
-		m.mealId = meal.MealID
-		m.mealItemId = meal.MealItemID
+		m.mealId = string(meal.MealID)
+		m.mealItemId = string(meal.MealItemID)
 		m.mealPrice = meal.MealPrice
 		m.mealType = meal.MealType
-		m.orderId = od.OrderInfo.OrderID
-		m.productId = meal.ProductID
+		m.orderId = string(od.OrderInfo.OrderID)
+		m.productId = string(meal.ProductID)
 		m.productImg = meal.ProductImg
-		m.productName = meal.ProductName
+		m.productName = string(meal.ProductName)
 		m.productNum = meal.ProductNum
 		m.productPrice = meal.ProductPrice
 		m.salesArea = meal.SalesArea
-		m.storeId = od.OrderInfo.StoreID
+		m.storeId = string(od.OrderInfo.StoreID)
 		m.totalPrice = meal.TotalPrice
 		//m.UpdateTime =
 		ret = append(ret, m)
@@ -562,7 +575,7 @@ func (od *OrderJSON) Update() []string {
 	var stmt Struct2SQL
 	fd := make([]string, 0, 1)
 	fd = append(fd, "orderId")
-	ret = append(ret, stmt.Update(master, Order{orderId: od.Order.OrderInfo.OrderID}, fd))
+	ret = append(ret, stmt.Update(master, Order{orderId: string(od.Order.OrderInfo.OrderID)}, fd))
 	return ret
 }
 
