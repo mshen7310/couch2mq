@@ -3,14 +3,13 @@ package main
 import (
 	"couch2mq/couchdb"
 	"couch2mq/logger"
+	"couch2mq/oc"
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
+	"runtime/debug"
 	"time"
-
-	"couch2mq/oc"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/kr/pretty"
@@ -18,19 +17,19 @@ import (
 
 func failOnError(err error, msg string) {
 	if err != nil {
-		log.Fatalf("%s: %s", msg, err)
-		panic(fmt.Sprintf("%s: %s", msg, err))
+		log.Panicf("%s: %s", msg, err)
 	}
 }
 func getChanges(client *couchdb.Client, dbname string, since string) (*couchdb.Changes, error) {
 	//db, err := client.EnsureDB(dbname)
 	db, err := client.DB(dbname)
 	failOnError(err, "Failed to connect to "+dbname)
-	return db.Changes(since)
+	return db.NormalChanges(since)
 }
 
 func panicOnError(err error) {
 	if err != nil {
+
 		panic(err)
 	}
 }
@@ -38,6 +37,7 @@ func forever(fn func()) {
 	f := func() {
 		defer func() {
 			if r := recover(); r != nil {
+				debug.PrintStack()
 				pretty.Println("Recover from error:", r)
 			}
 		}()
@@ -45,8 +45,6 @@ func forever(fn func()) {
 	}
 	for {
 		f()
-		d, _ := time.ParseDuration("5s")
-		time.Sleep(d)
 	}
 }
 func doOrder(db *sql.DB, order oc.OrderJSON) error {
@@ -72,8 +70,10 @@ func handleOrders() {
 	failOnError(err, "Failed to get latest sequence number")
 	err = lg.Clean()
 	failOnError(err, "Failed to clean up log")
-	forever(func() {
-		client, err := couchdb.New("http://couchdb-cloud.gtdx.liansuola.com", "ymeng", "111111")
+	for {
+		d, _ := time.ParseDuration("5s")
+		time.Sleep(d)
+		client, err := couchdb.New("https://couchdb-cloud.gtdx.liansuola.com", "ymeng", "111111")
 		failOnError(err, "Failed to connect to CouchDB")
 		ch, err := getChanges(client, "orders", seq)
 		failOnError(err, "Failed to get changes of orders")
@@ -106,16 +106,9 @@ func handleOrders() {
 				}
 			}
 		}
-	})
+	}
 }
 
 func main() {
-	//	conn, err := amqp.Dial("amqp://guest:guest@mq.liansuola.com:5672/")
-	//	failOnError(err, "Failed to connect to RabbitMQ")
-	//	defer conn.Close()
-
-	//	db, err := oc.Open("mysql", "root@tcp(127.0.0.1:3306)/oc")
-	//	failOnError(err, "Failed to connect to MySQL")
-	//	defer db.Close()
-	handleOrders()
+	forever(handleOrders)
 }

@@ -2,6 +2,7 @@ package couchdb
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"io/ioutil"
@@ -75,15 +76,95 @@ type Change struct {
 	Doc       json.RawMessage `json:"doc"`
 }
 
-// Changes represents the result of CouchDB changes of 'normal' mode
+//IChanges is the interface to iterate over changes
+type IChanges interface {
+	Next() bool
+	Get() (*Change, error)
+}
+
+//Changes represents the result of CouchDB changes of 'normal' mode
 type Changes struct {
+	index   int      `json:"-"`
 	Results []Change `json:"results"`
 	LastReq string   `json:"last_seq"`
 	Pending uint     `json:"pending"`
 }
 
-//Changes returns 100 feeds along with docs and conflicts
-func (d *DB) Changes(since string) (*Changes, error) {
+//Next returns true when there is data
+func (c *Changes) Next() bool {
+	c.index++
+	return c.index < len(c.Results)
+}
+
+//Get return the current data
+func (c *Changes) Get() (*Change, error) {
+	if c.index < len(c.Results) {
+		return &c.Results[c.index], nil
+	}
+	return nil, errors.New("There is no more change feeds")
+}
+
+//ConChanges represents the result stream of a continuous change feeds
+type ConChanges struct {
+	decoder *json.Decoder
+	err     error
+	change  Change
+}
+
+//Next return true when there is more feeds to come
+func (c *ConChanges) Next() bool {
+	c.err = c.decoder.Decode(&c.change)
+	return c.err == nil
+}
+
+//Get return the current feed
+func (c *ConChanges) Get() (*Change, error) {
+	if c.err == nil {
+		return &c.change, nil
+	}
+	return nil, c.err
+}
+
+//ContinuousChanges returns a continous change feeds
+func (d *DB) ContinuousChanges(since string) (*ConChanges, error) {
+	r, err := url.Parse(d.Name + "/_changes")
+	if err == nil {
+		u := d.client.URL.ResolveReference(r)
+		q := u.Query()
+		q.Set("feed", "continuous")
+		q.Set("conflicts", "true")
+		q.Set("include_docs", "true")
+		if len(since) > 0 {
+			q.Set("since", since)
+		}
+		u.RawQuery = q.Encode()
+		req, err := http.NewRequest("GET", u.String(), nil)
+		//		b, err := httputil.DumpRequestOut(req, true)
+		//		pretty.Println(string(b), err)
+		if err == nil {
+			if len(d.client.Username) > 0 {
+				req.SetBasicAuth(d.client.Username, d.client.Password)
+			}
+			cli := &http.Client{}
+			resp, err := cli.Do(req)
+			if err == nil {
+				if resp.Status == "200 OK" {
+					ch := ConChanges{
+						decoder: json.NewDecoder(resp.Body),
+					}
+					return &ch, nil
+				}
+				b, _ := httputil.DumpResponse(resp, true)
+				return nil, errors.New(string(b[:]))
+			}
+		}
+	}
+	return nil, err
+
+}
+
+//NormalChanges returns 100 feeds along with docs and conflicts
+func (d *DB) NormalChanges(since string) (*Changes, error) {
 	r, err := url.Parse(d.Name + "/_changes")
 	if err == nil {
 		u := d.client.URL.ResolveReference(r)
@@ -103,7 +184,13 @@ func (d *DB) Changes(since string) (*Changes, error) {
 			if len(d.client.Username) > 0 {
 				req.SetBasicAuth(d.client.Username, d.client.Password)
 			}
-			cli := &http.Client{}
+			cli := &http.Client{
+				Transport: &http.Transport{
+					TLSClientConfig: &tls.Config{
+						InsecureSkipVerify: true,
+					},
+				},
+			}
 			resp, err := cli.Do(req)
 			if err == nil {
 				if resp.Status == "200 OK" {
@@ -114,13 +201,16 @@ func (d *DB) Changes(since string) (*Changes, error) {
 						if err == nil {
 							return &ch, nil
 						}
+						return nil, err
 					}
-				} else {
-					b, _ := httputil.DumpResponse(resp, true)
-					return nil, errors.New(string(b[:]))
+					return nil, err
 				}
+				b, _ := httputil.DumpResponse(resp, true)
+				return nil, errors.New(string(b[:]))
 			}
+			return nil, err
 		}
+		return nil, err
 	}
 	return nil, err
 }

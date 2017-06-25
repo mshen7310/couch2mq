@@ -317,8 +317,8 @@ type JOrderInfo struct {
 	Nums                int    `json:"nums"`
 	StoreID             ID     `json:"storeid"`
 	StoreName           string `json:"storename"`
-	OrderTradeNo        string `json:"ordertradeno"`
-	OrderThirdNo        string `json:"orderthirdno"`
+	OrderTradeNo        ID     `json:"ordertradeno"`
+	OrderThirdNo        ID     `json:"orderthirdno"`
 	OrderSource         string `json:"ordersource"`
 	OrderPlatformSource string `json:"orderplatformsource"`
 	PayType             string `json:"paytype"`
@@ -412,8 +412,8 @@ func (od JOrder) genOrder() Order {
 	ret.storeId = string(od.OrderInfo.StoreID)
 	ret.storeName = od.OrderInfo.StoreName
 	ret.orderStatus = od.OrderInfo.OrderStatus
-	ret.orderTradeNo = od.OrderInfo.OrderTradeNo
-	ret.orderThirdNo = od.OrderInfo.OrderThirdNo
+	ret.orderTradeNo = string(od.OrderInfo.OrderTradeNo)
+	ret.orderThirdNo = string(od.OrderInfo.OrderThirdNo)
 	ret.orderPostNo = od.OrderInfo.OrderPostNo
 	ret.orderSource = od.OrderInfo.OrderSource
 	ret.orderPlatformSource = od.OrderInfo.OrderPlatformSource
