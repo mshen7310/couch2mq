@@ -18,6 +18,8 @@ import (
 	"github.com/kr/pretty"
 )
 
+const VERSION string = "1.0.0"
+
 func failOnError(err error, msg string) {
 	if err != nil {
 		log.Panicf("%s: %s", msg, err)
@@ -136,6 +138,6 @@ func handleOrders() {
 }
 
 func main() {
-	pretty.Println("CouchDB to MySQL 1.0.0")
+	pretty.Println("CouchDB to MySQL", VERSION)
 	forever(handleOrders)
 }
