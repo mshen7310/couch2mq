@@ -136,6 +136,6 @@ func handleOrders() {
 }
 
 func main() {
-
+	pretty.Println("CouchDB to MySQL 1.0.0")
 	forever(handleOrders)
 }
