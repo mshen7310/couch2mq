@@ -1,14 +1,12 @@
 package logger
 
 import (
+	"couch2mq/config"
 	"couch2mq/tunnel"
 	"database/sql"
+	"fmt"
 	"strconv"
 	"strings"
-
-	"fmt"
-
-	_ "github.com/go-sql-driver/mysql"
 )
 
 //Logger holds the handle of database
@@ -25,21 +23,48 @@ func seq2index(seq string) (int, error) {
 
 //New creates log database and create sequence table
 func New(tbl string) (*Logger, error) {
-	//for production
-	//t, err := tunnel.Open("54.223.176.133", 22, "kenlin", "thomas123", "sm12g5l9d32eyun.cjwa2zciaejp.rds.cn-north-1.amazonaws.com.cn", 3306, "keithyau", "thomas123", "oc")
-	//for testing
-	t, err := tunnel.Open("54.223.176.133", 22, "kenlin", "thomas123", "sparkpadgptest.cjwa2zciaejp.rds.cn-north-1.amazonaws.com.cn", 3306, "keithyau", "thomas123", "oc")
-	//for local development
-	//d, err := sql.Open("mysql", "root@tcp(127.0.0.1:3306)/oc")
+	sql := make(map[string]interface{})
+	err := config.Get("$.mysql+", &sql)
 	if err == nil {
-		log := Logger{
-			ssh:   t,
-			db:    t.Database,
-			table: tbl,
+		if s, ok := sql["ssh"]; ok {
+			ssh := s.(map[string]interface{})
+			t, err := tunnel.OpenSSH(
+				ssh["host"].(string),
+				int(ssh["port"].(float64)),
+				ssh["username"].(string),
+				ssh["password"].(string),
+				sql["host"].(string),
+				int(sql["port"].(float64)),
+				sql["username"].(string),
+				sql["password"].(string),
+				sql["database"].(string))
+			if err == nil {
+				log := Logger{
+					ssh:   t,
+					db:    t.Database,
+					table: tbl,
+				}
+				return &log, nil
+			}
+			return nil, err
 		}
-		return &log, nil
+		t, err := tunnel.Open(
+			sql["host"].(string),
+			int(sql["port"].(float64)),
+			sql["username"].(string),
+			sql["password"].(string),
+			sql["database"].(string))
+		if err == nil {
+			log := Logger{
+				ssh:   t,
+				db:    t.Database,
+				table: tbl,
+			}
+			return &log, nil
+		}
+		return nil, err
 	}
-	return nil, err
+	panic("There is no available mysql configuration")
 }
 
 //DB return the database handle
@@ -50,6 +75,12 @@ func (log *Logger) DB() *sql.DB {
 //Close closes the log database
 func (log *Logger) Close() error {
 	return log.ssh.Close()
+}
+
+//Truncate clean up table
+func (log *Logger) Truncate() error {
+	_, err := log.db.Exec(fmt.Sprintf(`TRUNCATE TABLE %s`, log.table))
+	return err
 }
 
 //Clean clears sequence table except the latest one
@@ -132,10 +163,10 @@ func (log *Logger) Update(seq string, docid string, inerr error) error {
 		id, _ := seq2index(seq)
 		if inerr == nil {
 			_, err = stmt.Exec(id, seq, docid, "nil")
-		} else {
-			_, err = stmt.Exec(id, seq, docid, inerr.Error())
+			return err
 		}
-
+		_, err = stmt.Exec(id, seq, docid, inerr.Error())
+		return err
 	}
 	return err
 }

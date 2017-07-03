@@ -1,0 +1,20 @@
+{
+    "couchdb": {
+        "url": "http://52.80.38.62:5984",
+        "username": "ymeng",
+        "password": "111111"
+    },
+    "mysql": {
+        "ssh": {
+            "host": "54.223.176.133",
+            "port": 22,
+            "username": "kenlin",
+            "password": "thomas123"
+        },
+        "host": "sm12g5l9d32eyun.cjwa2zciaejp.rds.cn-north-1.amazonaws.com.cn",
+        "port": 3306,
+        "username": "keithyau",
+        "password": "thomas123",
+        "database": "oc"
+    }
+}

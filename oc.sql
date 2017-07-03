@@ -1,11 +1,12 @@
+-- name: use-oc 
 USE oc;
+-- name: set-encoding
 SET NAMES utf8mb4;
+-- name: disable-foreign-key
 SET FOREIGN_KEY_CHECKS = 0;
-
--- ----------------------------
---  Table structure for `order_discount`
--- ----------------------------
+-- name: drop-order-discount
 DROP TABLE IF EXISTS `order_discount`;
+-- name: create-order-discount 
 CREATE TABLE `order_discount` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '编号',
   `orderId` varchar(50) NOT NULL COMMENT '订单ID',
@@ -27,8 +28,9 @@ CREATE TABLE `order_discount` (
   KEY `orderId` (`orderId`),
   KEY `productId` (`productId`)
 ) ENGINE=InnoDB AUTO_INCREMENT=6764490 DEFAULT CHARSET=utf8 COMMENT='订单优惠明细表';
-
+-- name: drop-order-detail
 DROP TABLE IF EXISTS `order_detail`;
+-- name: create-order-detail
 CREATE TABLE `order_detail` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '编号',
   `orderId` varchar(50) NOT NULL COMMENT '订单ID',
@@ -55,8 +57,9 @@ CREATE TABLE `order_detail` (
   KEY `addTime` (`addTime`),
   KEY `isMeat` (`isMeat`)
 ) ENGINE=InnoDB AUTO_INCREMENT=29504425 DEFAULT CHARSET=utf8 COMMENT='订单明细表';
-
+-- name: drop-order-master
 DROP TABLE IF EXISTS `order_master`;
+-- name: create-order-master
 CREATE TABLE `order_master` (
   `orderId` varchar(50) NOT NULL COMMENT '订单ID',
   `userId` varchar(255) DEFAULT NULL COMMENT '会员ID',
@@ -124,8 +127,9 @@ CREATE TABLE `order_master` (
   KEY `orderStatus` (`orderStatus`),
   KEY `isTakeOut` (`isTakeOut`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='订单概况表';
-
+-- name: drop-order-meal-detail
 DROP TABLE IF EXISTS `order_meal_detail`;
+-- name: create-order-meal-detail
 CREATE TABLE `order_meal_detail` (
   `id` int(11) NOT NULL AUTO_INCREMENT,
   `orderId` varchar(50) NOT NULL COMMENT '订单ID',
@@ -149,8 +153,9 @@ CREATE TABLE `order_meal_detail` (
   KEY `detail_orderid` (`orderId`) USING BTREE COMMENT '订单号'
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COMMENT='订单套餐明细表';
 
-
+-- name: drop-order-seq
 DROP TABLE IF EXISTS `order_seq`;
+-- name: create-order-seq
 CREATE TABLE `order_seq` (
   `id` int(11) NOT NULL,
   `seq` varchar(2048) NOT NULL,
@@ -159,8 +164,9 @@ CREATE TABLE `order_seq` (
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
+-- name: drop-shift-seq
 DROP TABLE IF EXISTS `shift_seq`;
+-- name: create-shift-seq
 CREATE TABLE `shift_seq` (
   `id` int(11) NOT NULL,
   `seq` varchar(2048) NOT NULL,
@@ -169,5 +175,5 @@ CREATE TABLE `shift_seq` (
   `timestamp` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
-
+-- name: enable-foreign-key
 SET FOREIGN_KEY_CHECKS = 1;

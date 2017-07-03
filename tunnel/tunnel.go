@@ -26,12 +26,28 @@ type Tunnel struct {
 
 //Close close a tunnel
 func (t *Tunnel) Close() error {
-	t.Database.Close()
-	return t.Connection.Close()
+	if t.Connection != nil {
+		t.Database.Close()
+		return t.Connection.Close()
+	}
+	return t.Database.Close()
 }
 
 //Open open a tunnel
-func Open(sshHost string, sshPort int, sshUser string, sshPass string, dbHost string, dbPort int, dbUser string, dbPass string, dbName string) (*Tunnel, error) {
+func Open(dbHost string, dbPort int, dbUser string, dbPass string, dbName string) (*Tunnel, error) {
+	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@mysql+tcp(%s:%d)/%s", dbUser, dbPass, dbHost, dbPort, dbName))
+	if err == nil {
+		t := Tunnel{
+			Database:   db,
+			Connection: nil,
+		}
+		return &t, nil
+	}
+	return nil, err
+}
+
+//OpenSSH open a tunnel
+func OpenSSH(sshHost string, sshPort int, sshUser string, sshPass string, dbHost string, dbPort int, dbUser string, dbPass string, dbName string) (*Tunnel, error) {
 	sshConfig := &ssh.ClientConfig{
 		User: sshUser,
 		Auth: []ssh.AuthMethod{
