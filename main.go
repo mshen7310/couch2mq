@@ -8,7 +8,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"log"
 	"os"
 	"runtime"
@@ -140,7 +139,7 @@ func handleOrders() {
 }
 
 func main() {
-	fmt.Printf("OS: %s\nArchitecture: %s\n", runtime.GOOS, runtime.GOARCH)
+	pretty.Println("GOOS:", runtime.GOOS, "GOARCH:", runtime.GOARCH)
 	pretty.Println("CouchDB to MySQL", VERSION)
 	forever(handleOrders)
 }
