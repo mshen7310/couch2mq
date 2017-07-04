@@ -1,8 +1,10 @@
 FROM golang:latest
 
-WORKDIR /go/bin
+WORKDIR /go/src/couch2mq
 
 RUN git clone https://github.com/mshen7310/couch2mq /go/src/couch2mq
+
+RUN go get github.com/go-sql-driver/mysql
 
 RUN go get github.com/kr/pretty 
 
@@ -14,8 +16,6 @@ RUN go get github.com/gchaincl/dotsql
 
 RUN cd /go/src/couch2mq
 
-RUN go install
+RUN go build
 
-RUN cp conf.json /go/bin
-
-CMD ["couch2mq"]
+CMD ["./couch2mq"]
