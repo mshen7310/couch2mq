@@ -1,6 +1,6 @@
 {
     "couchdb": {
-        "url": "http://52.80.38.62:5984",
+        "url": "http://couchdb-cloud.gtdx.liansuola.com:80",
         "username": "ymeng",
         "password": "111111"
     },

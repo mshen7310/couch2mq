@@ -146,14 +146,18 @@ func (d *DB) ContinuousChanges(since string) (*ConChanges, error) {
 				req.SetBasicAuth(d.client.Username, d.client.Password)
 			}
 			cli := &http.Client{}
+
 			resp, err := cli.Do(req)
 			if err == nil {
+				defer resp.Body.Close()
 				if resp.Status == "200 OK" {
 					ch := ConChanges{
 						decoder: json.NewDecoder(resp.Body),
 					}
+
 					return &ch, nil
 				}
+
 				b, _ := httputil.DumpResponse(resp, true)
 				return nil, errors.New(string(b[:]))
 			}

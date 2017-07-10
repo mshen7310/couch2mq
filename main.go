@@ -20,7 +20,7 @@ import (
 )
 
 //VERSION defines the version number of this program
-const VERSION string = "1.0.0"
+const VERSION string = "1.0.1"
 
 func failOnError(err error, msg string) {
 	if err != nil {
@@ -250,11 +250,13 @@ CREATE TABLE shift_seq (
 -- name: enable-foreign-key
 SET FOREIGN_KEY_CHECKS = 1;`
 
+var initDB bool
+
 func handleOrders() {
 	lg, err := logger.New("order_seq")
 	failOnError(err, "Failed to open database")
 	defer lg.Close()
-	if (len(os.Args) == 2) && (os.Args[1] == "--init") {
+	if initDB {
 		pretty.Println("Initialize database")
 		dot, err := dotsql.LoadFromString(INI_SQL)
 		failOnError(err, "Failed to initialize database")
@@ -274,6 +276,7 @@ func handleOrders() {
 		dot.Exec(lg.DB(), "drop-shift-seq")
 		dot.Exec(lg.DB(), "create-shift-seq")
 		dot.Exec(lg.DB(), "enable-foreign-key")
+		initDB = false
 	}
 	seq, err := lg.Seq()
 	failOnError(err, "Failed to get latest sequence number")
@@ -323,5 +326,6 @@ func handleOrders() {
 func main() {
 	pretty.Println("GOOS:", runtime.GOOS, "GOARCH:", runtime.GOARCH)
 	pretty.Println("CouchDB to MySQL", VERSION)
+	initDB = (len(os.Args) == 2) && (os.Args[1] == "--init")
 	forever(handleOrders)
 }
