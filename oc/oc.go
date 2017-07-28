@@ -262,6 +262,16 @@ type Order struct {
 	isTakeOut           int
 	addressName         string
 	needDelivery        int
+
+	thirdRate   int
+	userFee     int
+	discountFee int
+	totalFee    int
+	deliverFee  int
+	shopFee     int
+	shopRate    int
+	commission  int
+	foodsFee    int
 }
 
 //Time represent datetime in json data
@@ -396,6 +406,19 @@ type JOrder struct {
 	DiscountList   []JDiscountInfo `json:"discountList"`
 	OrderInfo      JOrderInfo      `json:"orderInfo"`
 	AddressInfo    JAddrInfo       `json:"addressInfo, omitempty"`
+}
+
+//JAmountInfo
+type JAmountInfo struct {
+	ThirdRate   int `json:"thirdRate"`
+	UserFee     int `json:"userFee"`
+	DiscountFee int `json:"discountFee"`
+	TotalFee    int `json:"totalFee"`
+	DeliverFee  int `json:"deliverFee"`
+	ShopFee     int `json:"shopFee"`
+	ShopRate    int `json:"ShopRate"`
+	Commission  int `json:"commission"`
+	FoodsFee    int `json:"foodsFee"`
 }
 
 func (od JOrder) genOrder() Order {
@@ -537,6 +560,22 @@ type OrderJSON struct {
 	ChangtbID  string      `json:"changtbId, omitempty"`
 	OcMsg      interface{} `json:"oc_msg, omitempty"`
 	Order      JOrder      `json:"order, omitempty"`
+	AmountInfo JAmountInfo `json:"amountInfo, omitempty"`
+}
+
+//OrderWithAmountInfo
+func (od *OrderJSON) OrderWithAmountInfo() Order {
+	master := od.Order.genOrder()
+	master.thirdRate = od.AmountInfo.ThirdRate
+	master.userFee = od.AmountInfo.UserFee
+	master.discountFee = od.AmountInfo.DiscountFee
+	master.totalFee = od.AmountInfo.TotalFee
+	master.deliverFee = od.AmountInfo.DeliverFee
+	master.shopFee = od.AmountInfo.ShopFee
+	master.shopRate = od.AmountInfo.ShopRate
+	master.commission = od.AmountInfo.Commission
+	master.foodsFee = od.AmountInfo.FoodsFee
+	return master
 }
 
 //Insert generate an array of SQL statements for insert a new order into database
@@ -544,7 +583,7 @@ func (od *OrderJSON) Insert() []string {
 	detail := od.Order.genDetail()
 	discount := od.Order.genDiscount()
 	meal := od.Order.genMeal()
-	master := od.Order.genOrder()
+	master := od.OrderWithAmountInfo()
 	ret := make([]string, 0, 30)
 	var stmt Struct2SQL
 	ret = append(ret, stmt.Insert(master))
@@ -573,7 +612,7 @@ func (od *OrderJSON) Delete() []string {
 
 //Update generate SQL statements to update an existing order in database
 func (od *OrderJSON) Update() []string {
-	master := od.Order.genOrder()
+	master := od.OrderWithAmountInfo()
 	ret := make([]string, 0, 30)
 	var stmt Struct2SQL
 	fd := make([]string, 0, 1)
